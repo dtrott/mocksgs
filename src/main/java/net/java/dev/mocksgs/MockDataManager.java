@@ -23,16 +23,16 @@ import com.sun.sgs.app.NameNotBoundException;
 import com.sun.sgs.app.ObjectNotFoundException;
 
 /**
- * Mock's darkstar's DataManager interface so that it behaves as 
+ * Mock's darkstar's DataManager interface so that it behaves as
  * expected without the backing datastore. <p>
- * 
+ *
  * When writing tests using this Manager, a transaction boundary can
  * be simulated by calling the {@link MockDataManager#serializeDataStore}
  * method.  This will serialize each object in the store, and then
  * deserialize them, getting a fresh, separate copy of each object.
  */
 public class MockDataManager implements DataManager {
-    
+
     /**
      * This is the master counter used to assign new ids to
      * every {@code ManagedReference} that is created.
@@ -89,19 +89,35 @@ public class MockDataManager implements DataManager {
     }
 
     @Override
+    public ManagedObject getBindingForUpdate(String name) {
+        return getBinding(name);
+    }
+
+    @Override
     public void markForUpdate(Object object) {
         checkArgument(object);
-        
+
         if (!idMap.containsKey(object)) {
             checkRemoved(object);
         }
     }
 
     @Override
+    public BigInteger getObjectId(Object object) {
+        checkArgument(object);
+
+        if (idMap.containsKey(object)) {
+            return idMap.get(object);
+        }
+
+        return createReference(object).getId();
+    }
+
+    @Override
     public String nextBoundName(String name) {
         List<String> names = new ArrayList<String>(bindings.keySet());
         Collections.sort(names);
-        
+
         if(name == null) {
             if(names.size() > 0) {
                 return names.get(0);
@@ -151,10 +167,10 @@ public class MockDataManager implements DataManager {
         BigInteger id = addToDataStore((ManagedObject) object);
         bindings.put(name, id);
     }
-    
+
     /**
      * Retrieves the complete set of {@code ManagedObject}s in the data store.
-     * 
+     *
      * @return complete set of items in the data store
      */
     public Set<ManagedObject> getAllData() {
@@ -163,10 +179,10 @@ public class MockDataManager implements DataManager {
 
     /**
      * Retrieves a mapping of names to {@code ManagedObject}s for all name
-     * bindings in the data store.  Note that the result of this method 
-     * represents a snapshot of the data, and becomes invalid if the 
+     * bindings in the data store.  Note that the result of this method
+     * represents a snapshot of the data, and becomes invalid if the
      * data store is modified in any way.
-     * 
+     *
      * @return map of names bound to objects in the data store
      */
     public Map<String, ManagedObject> getBoundData() {
@@ -174,14 +190,14 @@ public class MockDataManager implements DataManager {
         for(String name : bindings.keySet()) {
             data.put(name, store.get(bindings.get(name)));
         }
-        
+
         return data;
     }
 
-    
+
     /**
      * Retrieves the object with the specified id from the data store
-     * 
+     *
      * @param id the id of the object
      * @return the {@code ManagedObject} that is associated with this id
      * @throws ObjectNotFoundException if no object with the given id
@@ -195,25 +211,25 @@ public class MockDataManager implements DataManager {
 
         return store.get(id);
     }
-    
+
     /**
      * Returns the total number of objects in the data store
-     * 
+     *
      * @return total number of objects in the data store
      */
     public int size() {
         return store.size();
     }
-    
+
     /**
      * Serialize and de-serialize each of the objects in the data store
      * to simulate the start of a new transaction.  <p>
-     * 
+     *
      * This method will
      * also have the added side effect of deactivating any
      * {@code ManagedReference} objects that have been created through
      * this data store since the last call to this method.  <p>
-     * 
+     *
      * A deactivated
      * {@code ManagedReference} will always throw a
      * {@code TransactionNotActiveException} if an attempt is made to
@@ -248,7 +264,7 @@ public class MockDataManager implements DataManager {
             store.put(id, m);
         }
 
-        //record each object id in the id map 
+        //record each object id in the id map
         idMap.clear();
         for (Iterator<BigInteger> ib = store.keySet().iterator();
                 ib.hasNext();) {
@@ -278,7 +294,7 @@ public class MockDataManager implements DataManager {
                     System.identityHashCode(object));
         }
     }
-    
+
     /**
      * Verify that the object has not been previously removed
      * from the data store
@@ -292,7 +308,7 @@ public class MockDataManager implements DataManager {
                     System.identityHashCode(object));
         }
     }
-    
+
     /**
      * Verify that the name is not null
      * @param name
@@ -300,7 +316,7 @@ public class MockDataManager implements DataManager {
     private void checkNull(String name) {
        if(name == null) {
            throw new NullPointerException("The name must not be null");
-       } 
+       }
     }
 
     /**
@@ -308,7 +324,7 @@ public class MockDataManager implements DataManager {
      * is already in the map, no changes are made and its id is simply
      * returned.  Otherwise, a new id is assigned to this object,
      * the object is stored, and the id is returned.
-     * 
+     *
      * @param object the object to put into the data store
      * @return the id of the object in the data store
      */

@@ -1,5 +1,6 @@
 package net.java.dev.mocksgs;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,7 +12,7 @@ import com.sun.sgs.app.ChannelListener;
 import com.sun.sgs.app.ClientSession;
 import com.sun.sgs.app.Delivery;
 
-public class MockChannel implements Channel {
+public class MockChannel implements Channel, Serializable {
 
     private final String name;
     private final ChannelListener listener;
@@ -43,20 +44,6 @@ public class MockChannel implements Channel {
         return !clientSessions.isEmpty();
     }
 
-    public Channel join(Set<ClientSession> sessions) {
-        for (ClientSession s : sessions) {
-            join(s);
-        }
-        return this;
-    }
-
-    public Channel leave(Set<ClientSession> sessions) {
-        for (ClientSession s : sessions) {
-            leave(s);
-        }
-        return this;
-    }
-
     public Channel join(final ClientSession clientSession) {
         clientSessions.put(clientSession, listener);
         return this;
@@ -64,6 +51,20 @@ public class MockChannel implements Channel {
 
     public Channel leave(final ClientSession clientSession) {
         clientSessions.remove(clientSession);
+        return this;
+    }
+
+    public Channel join(Set<? extends ClientSession> sessions) {
+        for (ClientSession s : sessions) {
+            join(s);
+        }
+        return this;
+    }
+
+    public Channel leave(Set<? extends ClientSession> sessions) {
+        for (ClientSession s : sessions) {
+            leave(s);
+        }
         return this;
     }
 
